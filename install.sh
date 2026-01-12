@@ -155,6 +155,21 @@ else
   echo "    Cron not installed. See docs/MANUAL_INSTALL.md for entries."
 fi
 
+
+echo
+echo "[+] Optional: LCD kiosk mode (Chromium dashboard + dimmer)"
+echo "    If you have a small LCD and have already installed its driver/overlay,"
+echo "    this will configure the Pi to boot into the Raybridge dashboard."
+read -r -p "Run screeninstall.sh now? (y/N): " DO_SCREEN
+DO_SCREEN="${DO_SCREEN:-N}"
+if [[ "$DO_SCREEN" =~ ^[Yy]$ ]]; then
+  if [ -f "$SCRIPT_DIR/screeninstall.sh" ]; then
+    bash "$SCRIPT_DIR/screeninstall.sh"
+  else
+    echo "screeninstall.sh not found in bundle directory. Skipping." >&2
+  fi
+fi
+
 echo
 echo "[✓] Done."
 echo "Dashboard:  http://<pi-ip>/rayhunter/"
