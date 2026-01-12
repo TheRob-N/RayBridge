@@ -20,7 +20,6 @@ Always verify results independently and understand the legal and technical impli
 
 
 # Raybridge Script Bundle
-
 This is a ready-to-copy bundle of the three Raybridge scripts plus templates for manual configuration.
 
 ## Contents
@@ -41,3 +40,18 @@ This is a ready-to-copy bundle of the three Raybridge scripts plus templates for
 ## Compatibility
 - Rayhunter v0.9.0+ (uses `/api/qmdl-manifest` and `/api/zip/{name}`)
 - Raspberry Pi OS Lite (32-bit)
+
+## Optional: LCD Kiosk Mode (On-Device Dashboard)
+
+If you're using a small LCD (e.g., 3.5" Waveshare/SpotPear), you can configure the Pi to boot directly into the Raybridge dashboard using Chromium kiosk mode and an idle-dimmer:
+
+```bash
+sudo ./screeninstall.sh
+sudo reboot
+```
+
+You can override defaults:
+
+```bash
+sudo DASH_URL="http://127.0.0.1/rayhunter/" IDLE_SECS=120 DIM_LEVEL=0.15 USERNAME=pi ./screeninstall.sh
+```
