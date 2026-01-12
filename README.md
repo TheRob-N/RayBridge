@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/raybridge-logo.png" alt="Raybridge" width="400">
+  <img src="assets/raybridge-logo-nbg.png" alt="Raybridge" width="400">
 </p>
 
 # Raybridge Script Bundle
