@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/raybridge-logo.png" alt="Raybridge" width="400">
+</p>
+
 # Raybridge Script Bundle
 
 This is a ready-to-copy bundle of the three Raybridge scripts plus templates for manual configuration.
