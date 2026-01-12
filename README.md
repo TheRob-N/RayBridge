@@ -1,31 +1,22 @@
-# Raybridge
-Out-of-band monitoring, archiving, and alerting for EFF Rayhunter
+# Raybridge Script Bundle
 
-Raybridge turns an Orbic hotspot running **EFF Rayhunter** into a remote, autonomous cellular‑surveillance detection node.
+This is a ready-to-copy bundle of the three Raybridge scripts plus templates for manual configuration.
 
-## Features
-- PCAP and QMDL archiving
-- Web dashboard
-- Daily heartbeat emails
-- Out-of-band uplink via Wi‑Fi
+## Contents
+- scripts/
+  - sync_captures.sh (downloads Rayhunter ZIP bundles: PCAP+QMDL)
+  - make_dashboard.sh (generates a lightweight status dashboard)
+  - heartbeat.sh (sends daily email status)
+- templates/
+  - msmtprc.template (SMTP config template for msmtp)
+  - raybridge.env.template (set Orbic URL, email recipient, paths)
+- docs/
+  - MANUAL_INSTALL.md (step-by-step manual setup)
 
-## Architecture
-Orbic (Rayhunter) → USB → Raspberry Pi Zero W → Wi‑Fi → Internet → Email & Dashboard
+## What you must customize
+1) `/etc/msmtprc` from `templates/msmtprc.template`
+2) `/opt/raybridge/raybridge.env` from `templates/raybridge.env.template`
 
-## Requirements
-- Orbic hotspot running Rayhunter v0.9.0+
-- Raspberry Pi Zero W
-- 8GB+ microSD
-- Wi‑Fi internet for the Pi
-
-## Manual Setup (Summary)
-1. Flash Raspberry Pi OS Lite (32‑bit)
-2. Configure Wi‑Fi and SSH
-3. Plug Orbic into Pi USB
-4. Install packages: jq, curl, lighttpd, msmtp, cron
-5. Configure SMTP in /etc/msmtprc
-6. Install Raybridge scripts under /opt/raybridge
-7. Add cron jobs for sync, dashboard, heartbeat
-8. Access dashboard at http://<pi-ip>/rayhunter/
-
-This file is a placeholder until the full GitHub project is synced.
+## Compatibility
+- Rayhunter v0.9.0+ (uses `/api/qmdl-manifest` and `/api/zip/{name}`)
+- Raspberry Pi OS Lite (32-bit)

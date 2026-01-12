@@ -1,0 +1,18 @@
+# /etc/msmtprc (template)
+# Choose an SMTP provider and fill in values.
+# For Gmail, you typically need an App Password.
+
+defaults
+auth on
+tls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile /var/log/msmtp.log
+
+account smtp
+host __SMTP_HOST__
+port __SMTP_PORT__
+from __FROM_ADDRESS__
+user __SMTP_USERNAME__
+password __SMTP_PASSWORD__
+
+account default : smtp
