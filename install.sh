@@ -9,6 +9,10 @@ set -euo pipefail
 # - Creates /opt/raybridge/raybridge.env from prompts
 # - Optionally installs root cron entries
 
+echo "Ensuring USB tether cannot steal the network..."
+bash scripts/fix-usb-routing.sh || true
+
+
 require_root() {
   if [ "$(id -u)" -ne 0 ]; then
     echo "Please run as root: sudo $0" >&2
