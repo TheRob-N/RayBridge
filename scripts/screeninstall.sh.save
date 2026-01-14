@@ -65,6 +65,7 @@ echo "[+] Installing kiosk packages (GUI + LightDM + Chromium) ..."
 apt update
 apt install -y \
   xserver-xorg xinit \
+  lightdm raspberrypi-ui-mods \
   xprintidle x11-xserver-utils
 
 # Install a Chromium variant if not already present
@@ -172,4 +173,3 @@ echo
 echo "Troubleshooting:"
 echo "  - If screen is black: confirm LCD driver/overlay is installed."
 echo "  - If kiosk doesn't start: check LightDM: sudo systemctl status lightdm --no-pager"
-
