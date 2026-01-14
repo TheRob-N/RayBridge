@@ -4,55 +4,79 @@
 
 ## 🛰️ Overview
 
-**RayBridge** is an off-grid security sentinel that bridges an **Orbic device running Rayhunter** with a Raspberry Pi–based dashboard and optional LCD display.
+**RayBridge** is an off-grid monitoring and visualization system designed to pair a
+**Raspberry Pi** with an **Orbic device running Rayhunter**.
 
-It continuously monitors system health, packet capture activity, and Orbic connectivity, providing both a **web dashboard** and a **dedicated LCD UI** for field deployment.
+It provides a clear, always-on operational view via:
+- A web dashboard
+- A dedicated LCD dashboard for field deployment
+- Continuous system health and connectivity awareness
 
-This project is designed for **low-connectivity, portable, and surveillance-focused environments**.
-
----
-
-## ✨ Core Features
-
-- Real-time system health monitoring
-- Orbic connectivity detection
-- Packet capture counting & event tracking
-- Web dashboard (desktop & mobile)
-- Dedicated **LCD UI** for Raspberry Pi displays
-- USB / Wi-Fi routing awareness
-- Daily heartbeat email notifications
-- Alert state visualization
+RayBridge is built for **portable, low-connectivity, and security-focused environments**.
 
 ---
 
-## 🛠️ Hardware & Software Requirements
+## ✨ Features
 
-| Component | Notes |
-|---------|------|
-| Raspberry Pi 4 | 64-bit OS recommended |
-| Optional 3.5″ SPI LCD | Waveshare / Spotpear Rev2.0 |
-| Orbic device | Running Rayhunter |
-| Raspberry Pi OS | Debian-based (Bookworm / Trixie) |
-| Local network access | Wi-Fi or Ethernet |
-
----
-
-## ⚙️ Installation Overview
-
-RayBridge is installed using an **interactive installer script** that will prompt you for several values.  
-Understanding these inputs ahead of time will make installation smoother.
-
-> **Nothing sensitive is uploaded to GitHub.**  
-> All credentials remain local to the Pi.
+- System health state (OK / CHECK / ALERT)
+- Orbic connectivity monitoring
+- Packet capture counting
+- Event timestamp tracking
+- Web-based dashboard
+- Dedicated LCD UI (SPI display)
+- USB + Wi-Fi routing awareness
+- Daily heartbeat email
+- Visual alert overlay mode
 
 ---
 
-## 🧾 Installer Prompts Explained
+## 🖥️ Interfaces
 
-During installation, you will be asked for the following:
+### Web Dashboard
+Accessible from any browser on the local network:
+
+```
+http://<pi-ip>/rayhunter/
+```
 
 ---
 
-### 🔹 1. Username
+### LCD Dashboard (Optional)
+Optimized for **480×300 SPI displays**.
 
-**Prompt example:**
+Features:
+- Enlarged RayBridge logo
+- **STINGRAY SENTINEL** header
+- Radar-style system status
+- Orbic connection indicator
+- Three live metric cards
+- Touch-based **REFRESH // ACK**
+- Alert overlay with visual emphasis
+
+---
+
+## 🔐 Security Model
+
+- No credentials are committed to GitHub
+- Installer secrets remain **local only**
+- GitHub access uses **Personal Access Tokens**
+- `.gitignore` prevents accidental secret commits
+
+---
+
+## 🧪 Future Development
+
+### 📡 Meshtastic
+Mesh networking between RayBridge nodes.
+
+### 🧠 Simulation Mode
+Run RayBridge without an Orbic device for demos or testing.
+
+### 🔔 Beep / Alarm
+Optional GPIO-based audible alerts.
+
+---
+
+## 📄 License
+
+MIT License — see `LICENSE` for details.
