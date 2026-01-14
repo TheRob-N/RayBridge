@@ -1,57 +1,58 @@
-<p align="center">
-  <img src="assets/raybridge-logo-nbg.png" alt="Raybridge" width="400">
-</p>
+# RayBridge • Stingray Sentinel
 
-## ⚠️ Development Status
+![RayBridge Logo](./assets/raybridge-logo-nbg.png)
 
-Raybridge is currently in **active development**.
+## 🛰️ Overview
 
-This project is a **work in progress** and should be considered **experimental**.  
-Features, scripts, configuration formats, and deployment methods may change at any time.
+**RayBridge** is an off-grid security sentinel that bridges an **Orbic device running Rayhunter** with a Raspberry Pi–based dashboard and optional LCD display.
 
-Do **not** rely on Raybridge for:
-- Critical safety
-- Legal compliance
-- Law enforcement or evidentiary use
-- Production or unattended operation
+It continuously monitors system health, packet capture activity, and Orbic connectivity, providing both a **web dashboard** and a **dedicated LCD UI** for field deployment.
 
-Use at your own risk.  
-Always verify results independently and understand the legal and technical implications of running cellular monitoring tools in your jurisdiction.
+This project is designed for **low-connectivity, portable, and surveillance-focused environments**.
 
+---
 
-# Raybridge Script Bundle
-This is a ready-to-copy bundle of the three Raybridge scripts plus templates for manual configuration.
+## ✨ Core Features
 
-## Contents
-- scripts/
-  - sync_captures.sh (downloads Rayhunter ZIP bundles: PCAP+QMDL)
-  - make_dashboard.sh (generates a lightweight status dashboard)
-  - heartbeat.sh (sends daily email status)
-- templates/
-  - msmtprc.template (SMTP config template for msmtp)
-  - raybridge.env.template (set Orbic URL, email recipient, paths)
-- docs/
-  - MANUAL_INSTALL.md (step-by-step manual setup)
+- Real-time system health monitoring
+- Orbic connectivity detection
+- Packet capture counting & event tracking
+- Web dashboard (desktop & mobile)
+- Dedicated **LCD UI** for Raspberry Pi displays
+- USB / Wi-Fi routing awareness
+- Daily heartbeat email notifications
+- Alert state visualization
 
-## What you must customize
-1) `/etc/msmtprc` from `templates/msmtprc.template`
-2) `/opt/raybridge/raybridge.env` from `templates/raybridge.env.template`
+---
 
-## Compatibility
-- Rayhunter v0.9.0+ (uses `/api/qmdl-manifest` and `/api/zip/{name}`)
-- Raspberry Pi OS Lite (32-bit)
+## 🛠️ Hardware & Software Requirements
 
-## Optional: LCD Kiosk Mode (On-Device Dashboard)
+| Component | Notes |
+|---------|------|
+| Raspberry Pi 4 | 64-bit OS recommended |
+| Optional 3.5″ SPI LCD | Waveshare / Spotpear Rev2.0 |
+| Orbic device | Running Rayhunter |
+| Raspberry Pi OS | Debian-based (Bookworm / Trixie) |
+| Local network access | Wi-Fi or Ethernet |
 
-If you're using a small LCD (e.g., 3.5" Waveshare/SpotPear), you can configure the Pi to boot directly into the Raybridge dashboard using Chromium kiosk mode and an idle-dimmer:
+---
 
-```bash
-sudo ./screeninstall.sh
-sudo reboot
-```
+## ⚙️ Installation Overview
 
-You can override defaults:
+RayBridge is installed using an **interactive installer script** that will prompt you for several values.  
+Understanding these inputs ahead of time will make installation smoother.
 
-```bash
-sudo DASH_URL="http://127.0.0.1/rayhunter/" IDLE_SECS=120 DIM_LEVEL=0.15 USERNAME=pi ./screeninstall.sh
-```
+> **Nothing sensitive is uploaded to GitHub.**  
+> All credentials remain local to the Pi.
+
+---
+
+## 🧾 Installer Prompts Explained
+
+During installation, you will be asked for the following:
+
+---
+
+### 🔹 1. Username
+
+**Prompt example:**
