@@ -4,7 +4,7 @@
 
 ## 🛰️ Overview
 
-**RayBridge** is an off-grid monitoring and visualization system designed to pair a
+**RayBridge** is a monitoring and visualization system designed to pair a
 **Raspberry Pi** with an **Orbic device running Rayhunter**.
 
 It provides a clear, always-on operational view via:
@@ -52,15 +52,6 @@ Features:
 - Three live metric cards
 - Touch-based **REFRESH // ACK**
 - Alert overlay with visual emphasis
-
----
-
-## 🔐 Security Model
-
-- No credentials are committed to GitHub
-- Installer secrets remain **local only**
-- GitHub access uses **Personal Access Tokens**
-- `.gitignore` prevents accidental secret commits
 
 ---
 
