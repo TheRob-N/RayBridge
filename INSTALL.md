@@ -1,10 +1,10 @@
 # RayBridge Installation (Raspberry Pi)
 
-This guide explains how to install RayBridge on a Raspberry Pi for use with an Orbic device running Rayhunter.
+This guide explains how to install RayBridge on a Raspberry Pi for use with an Orbic device running Rayhunter. https://github.com/EFForg/rayhunter
 
 RayBridge provides:
 - A web dashboard (accessible from the LAN)
-- Optional LCD dashboard support (SPI display)
+- Optional LCD dashboard support (SPI display) - https://www.amazon.com/dp/B07V9WW96D
 - System health + Orbic connectivity awareness
 - PCAP counting / timestamp tracking / alerting
 
