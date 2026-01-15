@@ -25,15 +25,20 @@ if curl -fsS --max-time 3 "${ORBIC_BASE}/api/qmdl-manifest" >/dev/null 2>&1; the
   ORBIC_OK="OK"
 fi
 
+# --- Count and latest bundle safely (no failure if none exist) ---
 COUNT="0"
 if [ -d "$CAPDIR" ]; then
-  COUNT="$(ls -1 "$CAPDIR"/*.zip 2>/dev/null | wc -l | tr -d ' ')"
+  COUNT="$(find "$CAPDIR" -maxdepth 1 -type f -name '*.zip' 2>/dev/null | wc -l | tr -d ' ')"
 fi
 
 LAST="(none)"
-if [ -d "$CAPDIR" ] && ls -1 "$CAPDIR"/*.zip >/dev/null 2>&1; then
-  LAST="$(ls -1t "$CAPDIR"/*.zip | head -n1 | xargs -n1 basename)"
+if [ -d "$CAPDIR" ]; then
+  # Print "mtime_epoch filename", sort newest first, pick first filename
+  LAST="$(find "$CAPDIR" -maxdepth 1 -type f -name '*.zip' -printf '%T@ %f\n' 2>/dev/null \
+    | sort -nr | head -n1 | awk '{print $2}')"
+  [ -n "${LAST}" ] || LAST="(none)"
 fi
+# ----------------------------------------------------------------
 
 SEEN_COUNT="0"
 if [ -f "$SEEN" ]; then
