@@ -7,9 +7,15 @@
 **RayBridge** is a monitoring and visualization system designed to pair a
 **Raspberry Pi** with an **Orbic device running Rayhunter**.
 
-It provides a clear, always-on operational view via:
-- A web dashboard
-- A dedicated LCD dashboard for field deployment
+### LCD Dashboard (Live)
+
+![RayBridge LCD Dashboard](docs/screenshots/raybridge-lcd.gif)
+
+The LCD dashboard runs in a Chromium kiosk on a Raspberry Pi and provides:
+- Real-time system and capture status
+- Orbic connectivity state
+- Alert indicators with visual emphasis during events
+- Touch interaction for expanded diagnostics and “Nerd Stats”
 - Continuous system health and connectivity awareness
 
 RayBridge is built for **portable, low-connectivity, and security-focused environments**.
