@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=480,height=300,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Raybridge LCD • Nerd Stats</title>
+<style>
+  :root{
+    --bg:#050608;
+    --line:#18202a;
+    --fg:#e9f2fb;
+    --muted:#91a6bb;
+    --ok:#16c784;
+    --shadow: 0 10px 26px rgba(0,0,0,.45);
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    width:480px; height:300px;
+    margin:0; padding:0;
+    background:var(--bg);
+    color:var(--fg);
+    overflow:hidden;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+  }
+  .screen{
+    width:480px; height:300px;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .logo{ height:44px; width:auto; filter: drop-shadow(0 0 12px rgba(255,255,255,0.10)); }
+  .tag{
+    color:var(--muted);
+    font-size:12px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .clock{ color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
+
+  .panel{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    box-shadow:var(--shadow);
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    overflow:hidden;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    flex:1;
+  }
+
+  .row{
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:rgba(0,0,0,.18);
+    padding:10px 12px;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .k{
+    color:var(--muted);
+    font-size:11px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+  }
+  .v{
+    margin-top:6px;
+    font-size:14px;
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .foot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    color:var(--muted);
+    font-size:11px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+  }
+  .hint{ opacity:.95; }
+  .ver{ opacity:.95; }
+
+  .okdot{
+    display:inline-block;
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--ok);
+    box-shadow:0 0 10px rgba(22,199,132,.35);
+    margin-right:8px;
+    vertical-align:middle;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="top">
+    <div class="title">
+      <img class="logo" src="/rayhunter/lcd/logo.png" alt="Raybridge">
+      <div class="tag">NERD STATS</div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+
+  <div class="panel">
+    <div class="grid">
+      <div class="row"><div class="k">Uptime</div><div class="v" id="uptime">—</div></div>
+      <div class="row"><div class="k">Host</div><div class="v" id="host">—</div></div>
+
+      <div class="row"><div class="k">Disk usage</div><div class="v" id="disk">—</div></div>
+      <div class="row"><div class="k">Uplink</div><div class="v" id="uplink">—</div></div>
+
+      <div class="row"><div class="k">usb0</div><div class="v" id="usb0">—</div></div>
+      <div class="row"><div class="k">Orbic API</div><div class="v" id="orbic"><span class="okdot" id="orbicDot" style="display:none"></span><span id="orbicText">—</span></div></div>
+
+      <div class="row" style="grid-column:1 / span 2;"><div class="k">Version</div><div class="v" id="ver">—</div></div>
+    </div>
+
+    <div class="foot">
+      <div class="hint">TAP TO RETURN</div>
+      <div class="ver" id="updated">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+
+  function tickClock(){
+    $("clock").textContent = new Date().toLocaleTimeString([], {hour12:false});
+  }
+
+  async function load(){
+    try{
+      const r = await fetch("/rayhunter/lcd/nerdstats.json?_=" + Date.now(), {cache:"no-store"});
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      const s = await r.json();
+
+      $("uptime").textContent = s.uptime || "—";
+      $("host").textContent   = s.host || "—";
+      $("disk").textContent   = s.disk || "—";
+      $("uplink").textContent = s.uplink || "—";
+      $("usb0").textContent   = s.usb0 || "—";
+
+      const ok = !!s.orbic_ok;
+      $("orbicDot").style.display = ok ? "inline-block" : "none";
+      $("orbicText").textContent  = s.orbic_api ? (s.orbic_api + (ok ? " (OK)" : " (DOWN)")) : "—";
+
+      $("ver").textContent = s.version ? String(s.version) : "—";
+      $("updated").textContent = s.updated ? ("UPDATED " + String(s.updated).replace('T',' ')) : "—";
+
+    } catch(e){
+      $("uptime").textContent = "—";
+      $("host").textContent   = "—";
+      $("disk").textContent   = "—";
+      $("uplink").textContent = "—";
+      $("usb0").textContent   = "—";
+      $("orbicDot").style.display = "none";
+      $("orbicText").textContent  = "—";
+      $("ver").textContent = "—";
+      $("updated").textContent = "NO FEED";
+    }
+  }
+
+  // Tap anywhere -> back to main LCD
+  document.body.addEventListener("click", ()=>{
+    window.location.href = "/rayhunter/lcd/";
+  });
+
+  setInterval(tickClock, 500);
+  setInterval(load, 2000);
+
+  tickClock();
+  load();
+
+// --- Auto-return to main LCD after 2 minutes ---
+let autoReturnTimer;
+
+function startAutoReturn(){
+  clearTimeout(autoReturnTimer);
+  autoReturnTimer = setTimeout(()=>{
+    window.location.href = "/rayhunter/lcd/";
+  }, 120000); // 2 minutes
+}
+
+// Reset timer on any interaction
+document.addEventListener("click", startAutoReturn);
+document.addEventListener("touchstart", startAutoReturn);
+
+// Start timer on page load
+startAutoReturn();
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Raybridge Demo Control</title>
+<style>
+  :root{
+    --bg:#050608; --line:#18202a; --fg:#e9f2fb; --muted:#91a6bb;
+    --ok:#16c784; --warn:#ffcc00; --bad:#ff2d2d;
+    --shadow: 0 10px 26px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:22px}
+  h1{margin:0;font-size:34px;letter-spacing:.5px}
+  .sub{margin-top:6px;color:var(--muted);font-size:13px}
+  .grid{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:16px;
+    align-items:start;
+  }
+  .card{
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    box-shadow:var(--shadow);
+    padding:18px;
+    min-height:220px;
+  }
+  .title{color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-size:12px;margin-bottom:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  button{
+    border:1px solid var(--line);
+    background:rgba(0,0,0,.22);
+    color:var(--fg);
+    padding:10px 14px;
+    border-radius:12px;
+    font-weight:800;
+    letter-spacing:.5px;
+    cursor:pointer;
+  }
+  button.red{border-color:rgba(255,45,45,.35); background:rgba(255,45,45,.12)}
+  button.amber{border-color:rgba(255,204,0,.35); background:rgba(255,204,0,.10)}
+  button.green{border-color:rgba(22,199,132,.35); background:rgba(22,199,132,.10)}
+  button:active{transform:translateY(1px)}
+  label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-size:11px;margin:14px 0 6px}
+  input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:rgba(0,0,0,.25);
+    color:var(--fg);
+    padding:10px 12px;
+    font-size:14px;
+    outline:none;
+  }
+  .statusDot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--warn);margin-right:8px;box-shadow:0 0 12px rgba(255,204,0,.25)}
+  .statusDot.ok{background:var(--ok);box-shadow:0 0 12px rgba(22,199,132,.25)}
+  .statusDot.bad{background:var(--bad);box-shadow:0 0 12px rgba(255,45,45,.25)}
+  pre{
+    margin:0;
+    border:1px dashed rgba(145,166,187,.35);
+    border-radius:14px;
+    padding:12px;
+    background:rgba(0,0,0,.22);
+    color:var(--fg);
+    overflow:auto;
+    min-height:160px;
+    font-size:12px;
+    line-height:1.35;
+  }
+  .foot{margin-top:14px;color:var(--muted);font-size:12px}
+  @media (max-width: 900px){
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Raybridge Demo Control</h1>
+  <div class="sub">
+    Controls LCD demo mode via CGI endpoints under <code>/cgi-bin/</code>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="title">Quick Triggers</div>
+      <div class="row">
+        <button class="red"   onclick="quick('STINGRAY DETECTED • DEMO', 60)">STINGRAY DETECTED</button>
+        <button class="amber" onclick="quick('IMSI-CATCHER DETECTED • DEMO', 60)">IMSI-CATCHER</button>
+        <button class="amber" onclick="quick('ANOMALY DETECTED • DEMO', 60)">ANOMALY</button>
+        <button class="green" onclick="clearDemo()">CLEAR</button>
+      </div>
+
+      <div class="title" style="margin-top:18px">Custom Trigger</div>
+      <label>Message</label>
+      <input id="msg" value="STINGRAY DETECTED • DEMO" />
+
+      <label>Duration (seconds)</label>
+      <input id="dur" type="number" min="5" max="3600" value="60" />
+
+      <div class="row" style="margin-top:14px">
+        <button class="red" onclick="triggerDemo()">TRIGGER DEMO</button>
+        <button onclick="refreshStatus()">REFRESH STATUS</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Live Status</div>
+      <div style="margin-bottom:12px">
+        <span id="dot" class="statusDot"></span>
+        <span id="label" style="font-weight:900;letter-spacing:.5px">DEMO STATUS: …</span>
+      </div>
+      <pre id="out">Loading…</pre>
+      <div class="foot">
+        Endpoints:
+        <code>/cgi-bin/rb_demo_set.cgi</code>,
+        <code>/cgi-bin/rb_demo_clear.cgi</code>,
+        <code>/cgi-bin/rb_demo_status.cgi</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+
+  async function getJSON(url){
+    const r = await fetch(url, {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  }
+
+  function qs(o){
+    return Object.entries(o).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+  }
+
+  async function refreshStatus(){
+    try{
+      const s = await getJSON("/cgi-bin/rb_demo_status.cgi?_=" + Date.now());
+      $("out").textContent = JSON.stringify(s, null, 2);
+
+      const dot = $("dot");
+      dot.classList.remove("ok","bad");
+      if(s.active){
+        dot.classList.add("bad");
+        $("label").textContent = `DEMO STATUS: ACTIVE (${s.seconds_left}s)`;
+      }else{
+        dot.classList.add("ok");
+        $("label").textContent = "DEMO STATUS: IDLE";
+      }
+    }catch(e){
+      $("out").textContent = "Error: " + e;
+      $("dot").classList.remove("ok");
+      $("dot").classList.add("bad");
+      $("label").textContent = "DEMO STATUS: ERROR";
+    }
+  }
+
+  async function triggerDemo(){
+    const msg = $("msg").value || "STINGRAY DETECTED • DEMO";
+    const dur = $("dur").value || "60";
+    await fetch("/cgi-bin/rb_demo_set.cgi?" + qs({message: msg, duration: dur}), {cache:"no-store"});
+    await refreshStatus();
+  }
+
+  async function clearDemo(){
+    await fetch("/cgi-bin/rb_demo_clear.cgi?_=" + Date.now(), {cache:"no-store"});
+    await refreshStatus();
+  }
+
+  async function quick(message, duration){
+    await fetch("/cgi-bin/rb_demo_set.cgi?" + qs({message, duration}), {cache:"no-store"});
+    await refreshStatus();
+  }
+
+  setInterval(refreshStatus, 2000);
+  refreshStatus();
+</script>
+</body>
+</html>

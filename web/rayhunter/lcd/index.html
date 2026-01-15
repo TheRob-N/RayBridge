@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=480,height=300,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Raybridge LCD • Stingray Sentinel</title>
+
+<style>
+:root{
+  --bg:#050608;
+  --line:#18202a;
+  --fg:#e9f2fb;
+  --muted:#91a6bb;
+
+  --ok:#16c784;
+  --warn:#ffcc00;
+  --bad:#ff2d2d;
+
+  --shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+
+*{ box-sizing:border-box; }
+
+html,body{
+  width:480px; height:300px;
+  margin:0; padding:0;
+  background:var(--bg);
+  color:var(--fg);
+  overflow:hidden;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+}
+
+.screen{
+  width:480px; height:300px;
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* HEADER */
+.top{
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 2px;
+}
+.brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+.logo{
+  height:60px;
+  width:auto;
+  display:block;
+  filter:drop-shadow(0 0 12px rgba(255,255,255,.15));
+}
+.tag{
+  color:var(--muted);
+  font-size:12px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.clock{
+  font-variant-numeric:tabular-nums;
+  font-size:14px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+
+/* MAIN PANEL */
+.panel{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  box-shadow:var(--shadow);
+  padding:8px;
+  display:grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap:8px;
+  position:relative;
+  overflow:hidden;
+}
+
+/* LEFT RADAR */
+.radar{
+  border:1px solid rgba(24,32,42,.9);
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 50% 55%, rgba(22,199,132,.10), transparent 55%),
+    linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.35));
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  position:relative;
+  overflow:hidden;
+}
+.radar:before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    linear-gradient(to right, rgba(22,199,132,.08) 1px, transparent 1px) 0 0/24px 24px,
+    linear-gradient(to bottom, rgba(22,199,132,.08) 1px, transparent 1px) 0 0/24px 24px;
+  opacity:.28;
+  pointer-events:none;
+}
+
+.scan{
+  position:absolute; left:0; right:0;
+  height:44px;
+  top:-50px;
+  background:linear-gradient(180deg,
+    transparent,
+    rgba(22,199,132,.25),
+    transparent);
+  opacity:.45;
+  animation:sweep 2.8s linear infinite;
+  pointer-events:none;
+}
+@keyframes sweep{ to{ transform:translateY(310px); } }
+
+.bigState{ position:relative; z-index:2; }
+.stateLabel{
+  font-size:11px;
+  letter-spacing:2px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.stateText{
+  margin-top:6px;
+  font-size:44px;
+  font-weight:1000;
+  letter-spacing:3px;
+  line-height:1;
+}
+.stateSub{
+  margin-top:8px;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:240px;
+}
+
+.linkrow{
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  font-size:14px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.dot{
+  width:10px; height:10px;
+  border-radius:50%;
+  background:var(--warn);
+  box-shadow:0 0 10px rgba(255,204,0,.35);
+}
+.dot.ok{ background:var(--ok); box-shadow:0 0 10px rgba(22,199,132,.35); }
+.dot.bad{ background:var(--bad); box-shadow:0 0 10px rgba(255,45,45,.35); }
+.linktext{ font-weight:900; color:var(--fg); }
+
+.mini{
+  position:relative;
+  z-index:2;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:10px;
+  font-size:11px;
+  color:var(--muted);
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+
+/* RIGHT METRICS */
+.right{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.card{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  background:rgba(0,0,0,.20);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.k{ font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+.v{ font-size:18px; font-weight:900; margin-top:6px; font-variant-numeric:tabular-nums; }
+
+/* OPAQUE ALERT OVERLAY */
+.alertOverlay{
+  display:none;
+  position:absolute;
+  inset:0;
+  background:#070707;       /* fully opaque */
+  border-radius:16px;
+  padding:12px;
+  z-index:50;
+}
+.alertOverlay.on{ display:block; }
+
+.alertBox{
+  height:100%;
+  border-radius:14px;
+  border:2px solid rgba(255,45,45,.75);
+  background:#120606;       /* solid inner */
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:var(--shadow);
+}
+.alertTitle{
+  font-size:44px;
+  font-weight:1000;
+  letter-spacing:3px;
+  color:#ff2d2d;
+  text-align:center;
+  text-shadow:0 2px 14px rgba(0,0,0,.85);
+}
+.alertMsg{
+  margin-top:10px;
+  text-align:center;
+  font-size:14px;
+  text-shadow:0 2px 12px rgba(0,0,0,.85);
+}
+.alertHint{
+  margin-top:10px;
+  text-align:center;
+  font-size:12px;
+  letter-spacing:1px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+
+/* Dim background when alerting */
+.panel.alerting .radar,
+.panel.alerting .right{
+  filter:brightness(.4);
+}
+</style>
+</head>
+
+<body>
+<div class="screen">
+  <div class="top">
+    <div class="brand">
+      <img class="logo" src="/rayhunter/lcd/logo.png" alt="Raybridge">
+      <div class="tag">STINGRAY SENTINEL</div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="radar">
+      <div class="scan"></div>
+
+      <div class="bigState">
+        <div class="stateLabel">System</div>
+        <div class="stateText" id="stateText">CHECK</div>
+        <div class="stateSub" id="stateSub">Waiting for status</div>
+
+        <div class="linkrow">
+          <span class="dot" id="orbicDot"></span>
+          <span class="linktext" id="orbicText">ORBIC —</span>
+        </div>
+      </div>
+
+      <div class="mini">
+        <div class="hint" id="hint">NERD STATS</div>
+        <div class="ver" id="ver">v—</div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="card">
+        <div class="k">Last sync</div>
+        <div class="v" id="lastSync">—</div>
+      </div>
+      <div class="card">
+        <div class="k">Captures</div>
+        <div class="v" id="capCount">0</div>
+      </div>
+      <div class="card">
+        <div class="k">Last event</div>
+        <div class="v" id="lastEvent">—</div>
+      </div>
+    </div>
+
+    <div class="alertOverlay" id="alertOverlay">
+      <div class="alertBox">
+        <div class="alertTitle">ALERT</div>
+        <div class="alertMsg" id="alertMsg">STINGRAY DETECTED</div>
+        <div class="alertHint">TAP FOR NERD STATS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+
+function fmtAgo(ts){
+  if(ts === null || ts === undefined) return "—";
+  const t = new Date(ts);
+  if(Number.isNaN(t.getTime())) return String(ts);
+  const s = Math.floor((Date.now()-t.getTime())/1000);
+  if(s < 0) return "—";
+  if(s < 60) return `${s}s`;
+  const m = Math.floor(s/60);
+  if(m < 60) return `${m}m`;
+  const h = Math.floor(m/60);
+  if(h < 48) return `${h}h`;
+  const d = Math.floor(h/24);
+  return `${d}d`;
+}
+
+function tickClock(){
+  $("clock").textContent = new Date().toLocaleTimeString([], {hour12:false});
+}
+
+function setOrbic(ok){
+  const dot = $("orbicDot");
+  const txt = $("orbicText");
+  dot.classList.remove("ok","bad");
+  if(ok){
+    dot.classList.add("ok");
+    txt.textContent = "ORBIC CONNECTED";
+  }else{
+    dot.classList.add("bad");
+    txt.textContent = "ORBIC DOWN";
+  }
+}
+
+function applyAlertUI(message){
+  $("panel").classList.add("alerting");
+  $("stateText").textContent = "ALERT";
+  $("stateSub").textContent  = message || "Suspicious activity detected";
+  $("alertMsg").textContent  = message || "Suspicious activity detected";
+  $("alertOverlay").classList.add("on");
+}
+
+function clearAlertUI(){
+  $("panel").classList.remove("alerting");
+  $("alertOverlay").classList.remove("on");
+}
+
+async function checkDemo(){
+  // ✅ demo status endpoint used by demo.html
+  try{
+    const dr = await fetch("/cgi-bin/rb_demo_status.cgi?_=" + Date.now(), {cache:"no-store"});
+    if(!dr.ok) return null;
+    const d = await dr.json();
+    if(d && d.active) return d;
+  }catch(e){}
+  return null;
+}
+
+async function load(){
+  try{
+    // 1) DEMO override first
+    const demo = await checkDemo();
+    if(demo){
+      applyAlertUI(demo.message || "STINGRAY DETECTED • DEMO");
+      return;
+    }
+
+    // 2) normal status feed
+    const r = await fetch("/rayhunter/lcd/status.json?_=" + Date.now(), {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const s = await r.json();
+
+    $("ver").textContent = (s.version ? ("v" + String(s.version).replace(/^v/i,'')) : "v—");
+
+    const orbicOk = !!s.orbic_reachable;
+    const alertActive = !!s.alert_active;
+    const health = (s.health || "unknown");
+
+    setOrbic(orbicOk);
+
+    $("lastSync").textContent  = s.last_sync  ? (fmtAgo(s.last_sync)  + " ago") : "—";
+    $("capCount").textContent  = (s.capture_count ?? "—");
+    $("lastEvent").textContent = s.last_event ? (fmtAgo(s.last_event) + " ago") : "—";
+
+    if(alertActive){
+      applyAlertUI(s.alert_message || s.summary || "Suspicious activity detected");
+      return;
+    }
+
+    clearAlertUI();
+
+    if(health === "ok" && orbicOk){
+      $("stateText").textContent = "SAFE";
+      $("stateSub").textContent  = "Monitoring";
+    } else if(!orbicOk){
+      $("stateText").textContent = "CHECK";
+      $("stateSub").textContent  = "Orbic link down";
+    } else {
+      $("stateText").textContent = "CHECK";
+      $("stateSub").textContent  = (s.summary || "System degraded");
+    }
+
+  }catch(e){
+    clearAlertUI();
+    $("stateText").textContent = "CHECK";
+    $("stateSub").textContent  = "No status feed";
+
+    const dot = $("orbicDot");
+    const txt = $("orbicText");
+    dot.classList.remove("ok","bad");
+    txt.textContent = "ORBIC —";
+
+    $("lastSync").textContent  = "—";
+    $("capCount").textContent  = "—";
+    $("lastEvent").textContent = "—";
+    $("ver").textContent = "v—";
+  }
+}
+
+// Tap anywhere -> Nerd Stats page
+document.body.addEventListener("click", ()=>{
+  window.location.href = "/rayhunter/lcd/nerdstats.html";
+});
+
+setInterval(tickClock, 500);
+setInterval(load, 1000); // demo feels snappier at 1s
+tickClock();
+load();
+</script>
+</body>
+</html>
