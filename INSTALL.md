@@ -129,4 +129,8 @@ journalctl -xe --no-pager | tail -n 200
 
 ---
 
+## Future
+Step by step install guide with screenshots.
+
+---
 See README.md for feature overview and roadmap.
