@@ -64,10 +64,8 @@ Features:
 ## 🧪 Future Development
 
 ### 📡 Meshtastic
-Mesh networking between RayBridge nodes.
-
-### 🧠 Simulation Mode
-Run RayBridge without an Orbic device for demos or testing.
+- Integrate with Meshtastic for off-grid situational awareness
+- Broadcast alert messages to nearby nodes when RayBridge enters an alert state
 
 ### 🔔 Beep / Alarm
 Optional GPIO-based audible alerts.
