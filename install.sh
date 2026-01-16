@@ -4,7 +4,8 @@ set -euo pipefail
 # Raybridge interactive installer (manual-friendly)
 # - Installs dependencies
 # - Copies scripts to /opt/raybridge
-# - Sets up lighttpd capture directory
+# - Installs Rayhunter web UI (dashboard + LCD pages)
+# - Installs local-only CGI endpoints for restart/poweroff
 # - Creates /etc/msmtprc from prompts (or you can skip and edit later)
 # - Creates /opt/raybridge/raybridge.env from prompts
 # - Optionally installs root cron entries
@@ -56,6 +57,30 @@ mkdir -p /opt/raybridge/state /opt/raybridge
 mkdir -p /var/www/html/rayhunter/captures
 systemctl enable --now lighttpd
 
+# --- Install Rayhunter web UI + LCD assets ---
+echo "[+] Installing Rayhunter web UI (dashboard + LCD)..."
+mkdir -p /var/www/html/rayhunter
+cp -a "$SCRIPT_DIR/web/rayhunter/"* /var/www/html/rayhunter/
+
+# --- CGI endpoints for local-only power / restart ---
+echo "[+] Installing CGI endpoints (power/restart)..."
+mkdir -p /usr/lib/cgi-bin
+cp -f "$SCRIPT_DIR/cgi-bin/"*.cgi /usr/lib/cgi-bin/
+chmod +x /usr/lib/cgi-bin/*.cgi
+
+# Enable CGI module (safe to run even if already enabled)
+lighty-enable-mod cgi >/dev/null 2>&1 || true
+systemctl restart lighttpd
+
+# Allow www-data to execute shutdown/reboot (CGI scripts still enforce localhost-only)
+echo "[+] Configuring sudoers for LCD power actions..."
+cat >/etc/sudoers.d/raybridge-power <<'SUDOEOF'
+www-data ALL=NOPASSWD: /sbin/shutdown -h now
+www-data ALL=NOPASSWD: /sbin/shutdown -r now
+SUDOEOF
+chmod 440 /etc/sudoers.d/raybridge-power
+
+
 echo "[+] Copying scripts..."
 cp -f "$SCRIPT_DIR/scripts/"*.sh /opt/raybridge/
 chmod +x /opt/raybridge/*.sh
@@ -67,13 +92,13 @@ prompt_default OUT_DIR "Capture output dir" "/var/www/html/rayhunter/captures"
 prompt_default STATE_DIR "State dir" "/opt/raybridge/state"
 prompt_default TO "Heartbeat recipient email" "you@example.com"
 
-cat >/opt/raybridge/raybridge.env <<EOF
+cat >/opt/raybridge/raybridge.env <<EOFENV
 # raybridge.env
 ORBIC_BASE="${ORBIC_BASE}"
 OUT_DIR="${OUT_DIR}"
 STATE_DIR="${STATE_DIR}"
 TO="${TO}"
-EOF
+EOFENV
 chmod 600 /opt/raybridge/raybridge.env
 
 echo
@@ -89,7 +114,7 @@ if [[ "$DO_MAIL" =~ ^[Yy]$ ]]; then
   prompt_default SMTP_USER "SMTP username" "${FROM_ADDR}"
   prompt_secret  SMTP_PASS "SMTP password (for Gmail use an App Password)"
 
-  cat >/etc/msmtprc <<EOF
+  cat >/etc/msmtprc <<EOFMAIL
 defaults
 auth on
 tls on
@@ -104,7 +129,7 @@ user ${SMTP_USER}
 password ${SMTP_PASS}
 
 account default : smtp
-EOF
+EOFMAIL
   chown root:root /etc/msmtprc
   chmod 600 /etc/msmtprc
 
@@ -132,6 +157,7 @@ echo "[+] Set up cron (root) to automate sync/dashboard/heartbeat"
 echo "    - Sync captures every 10 minutes"
 echo "    - Update dashboard every 5 minutes"
 echo "    - Heartbeat daily at 08:00"
+echo "    - Restart nightly at 03:00"
 read -r -p "Install cron entries now? (y/N): " DO_CRON
 DO_CRON="${DO_CRON:-N}"
 
@@ -140,18 +166,19 @@ if [[ "$DO_CRON" =~ ^[Yy]$ ]]; then
   crontab -l 2>/dev/null > "$TMP_CRON" || true
 
   # Remove old raybridge lines if present
-  grep -v "raybridge.env; /opt/raybridge/" "$TMP_CRON" > "${TMP_CRON}.new" || true
+  grep -v "raybridge.env; /opt/raybridge/" "$TMP_CRON" | grep -v "# --- Raybridge ---" | grep -v "# --- /Raybridge ---" > "${TMP_CRON}.new" || true
   mv "${TMP_CRON}.new" "$TMP_CRON"
 
-  cat >>"$TMP_CRON" <<'EOF'
+  cat >>"$TMP_CRON" <<'EOFCRON'
 
 # --- Raybridge ---
 */10 * * * * . /opt/raybridge/raybridge.env; /opt/raybridge/sync_captures.sh >/dev/null 2>&1
 */5 * * * * . /opt/raybridge/raybridge.env; /opt/raybridge/make_dashboard.sh >/dev/null 2>&1
 0 8 * * * . /opt/raybridge/raybridge.env; /opt/raybridge/heartbeat.sh >/dev/null 2>&1
+0 3 * * * /sbin/shutdown -r now >/dev/null 2>&1
 # --- /Raybridge ---
 
-EOF
+EOFCRON
   crontab "$TMP_CRON"
   rm -f "$TMP_CRON"
   echo "    Cron installed."
@@ -178,6 +205,8 @@ echo
 echo "[✓] Done."
 echo "Dashboard:  http://<pi-ip>/rayhunter/"
 echo "Captures:   http://<pi-ip>/rayhunter/captures/"
+echo "LCD:        http://<pi-ip>/rayhunter/lcd/"
 echo "Notes:"
 echo " - If email fails, check /var/log/msmtp.log"
 echo " - If Orbic isn't reachable, confirm usb0 is up and ping 192.168.1.1"
+echo " - Power/Restart buttons only work when LCD is opened on the Pi (localhost)"
