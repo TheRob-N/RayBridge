@@ -4,33 +4,59 @@ set -euo pipefail
 # screeninstall.sh — Raybridge kiosk + dimmer setup for Raspberry Pi OS / Debian / Ubuntu
 #
 # What it does:
-#  - Installs minimal GUI + LightDM + Chromium (correct package per distro)
-#  - Sets LXDE autostart to launch Raybridge dashboard in kiosk mode
+#  - Installs a minimal X/desktop stack + LightDM + Chromium (auto-detects package name)
+#  - Enables LightDM (so the Pi boots into a GUI login/session)
+#  - Writes an LXDE autostart file that launches Raybridge in Chromium kiosk mode
 #  - Installs an idle-dimmer loop (dims after inactivity, restores on input)
 #
 # What it does NOT do:
 #  - Install your LCD driver/overlay (model-specific). Do that first.
-#
-# Usage:
-#   sudo USERNAME=rob ./screeninstall.sh
 #
 # Optional env overrides:
 #   DASH_URL="http://127.0.0.1/rayhunter/"
 #   IDLE_SECS=180
 #   DIM_LEVEL=0.25
 #   BRIGHT_LEVEL=1.0
-#   USERNAME=rob
+#
+# GOTCHA (important):
+#  - On Raspberry Pi OS *Lite* images, there is no GUI stack by default. This script installs:
+#      xserver-xorg, xinit, openbox, lightdm, and Chromium.
+#    If you still get a black screen after reboot, it’s usually because the LCD driver/overlay
+#    is not installed or the display output isn’t configured.
 
 DASH_URL="${DASH_URL:-http://127.0.0.1/rayhunter/}"
 IDLE_SECS="${IDLE_SECS:-180}"
 DIM_LEVEL="${DIM_LEVEL:-0.25}"
 BRIGHT_LEVEL="${BRIGHT_LEVEL:-1.0}"
-USERNAME="${USERNAME:-pi}"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Run as root: sudo $0" >&2
   exit 1
 fi
+
+# Auto-pick a sensible default kiosk user:
+# 1) If invoked with sudo, use the original user (SUDO_USER)
+# 2) Else fall back to "pi" only if it exists
+# 3) Else fall back to the first real login user (UID >= 1000)
+DEFAULT_USER=""
+if [ -n "${SUDO_USER:-}" ] && getent passwd "${SUDO_USER}" >/dev/null; then
+  DEFAULT_USER="${SUDO_USER}"
+elif getent passwd pi >/dev/null; then
+  DEFAULT_USER="pi"
+else
+  DEFAULT_USER="$(awk -F: '$3>=1000 && $1!="nobody"{print $1; exit}' /etc/passwd)"
+fi
+
+USERNAME="${USERNAME:-$DEFAULT_USER}"
+
+if [ -z "${USERNAME}" ] || ! getent passwd "${USERNAME}" >/dev/null; then
+  echo "[!] Could not determine a valid kiosk user." >&2
+  echo "    Run with: sudo USERNAME=<youruser> $0" >&2
+  exit 2
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+APT_INSTALL_FLAGS=(-yq -o Dpkg::Options::="--force-confnew")
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
@@ -47,47 +73,55 @@ pick_chromium_cmd() {
   return 1
 }
 
-install_chromium_pkg() {
-  # Try Debian/RPiOS first
+pick_chromium_pkg() {
+  # Raspberry Pi OS / Debian Bookworm commonly uses "chromium"
   if apt-cache show chromium >/dev/null 2>&1; then
-    apt install -y chromium
+    echo chromium
     return 0
   fi
-  # Try Ubuntu-style package name
+  # Some Ubuntu variants historically used "chromium-browser" (may be snap-backed)
   if apt-cache show chromium-browser >/dev/null 2>&1; then
-    apt install -y chromium-browser
+    echo chromium-browser
     return 0
   fi
+  echo ""
   return 1
 }
 
-echo "[+] Installing kiosk packages (GUI + LightDM + Chromium) ..."
-apt update
-apt install -y \
-  xserver-xorg xinit \
-  xprintidle x11-xserver-utils
+echo "[+] Updating apt cache..."
+apt-get update
 
-# Install a Chromium variant if not already present
+echo "[+] Installing kiosk packages (X + LightDM + tools)..."
+apt-get "${APT_INSTALL_FLAGS[@]}" install \
+  lightdm \
+  xserver-xorg \
+  xinit \
+  openbox \
+  xprintidle \
+  x11-xserver-utils \
+  ca-certificates
+
+# Install Chromium (package name differs across distros)
+CHROMIUM_PKG="$(pick_chromium_pkg || true)"
+if [[ -z "${CHROMIUM_PKG}" ]]; then
+  echo "[!] Chromium package not found in apt repositories (chromium / chromium-browser)." >&2
+  echo "    Try: apt-cache search chromium | head" >&2
+  exit 3
+fi
+
+echo "[+] Installing browser package: ${CHROMIUM_PKG} ..."
+apt-get "${APT_INSTALL_FLAGS[@]}" install "${CHROMIUM_PKG}"
+
 CHROME_CMD="$(pick_chromium_cmd || true)"
 if [[ -z "${CHROME_CMD}" ]]; then
-  echo "[+] Chromium not found; installing appropriate package..."
-  if ! install_chromium_pkg; then
-    echo "ERROR: Could not find a Chromium package via apt (chromium or chromium-browser)." >&2
-    echo "Try: sudo apt-cache search chromium | head" >&2
-    exit 3
-  fi
-  CHROME_CMD="$(pick_chromium_cmd || true)"
-fi
-
-if [[ -z "${CHROME_CMD}" ]]; then
-  echo "ERROR: Chromium installed but no executable found (chromium/chromium-browser)." >&2
+  echo "[!] Chromium installed but no executable found (chromium/chromium-browser)." >&2
+  echo "    Debug: ls -l /usr/bin/chromium* 2>/dev/null || true" >&2
   exit 4
 fi
-
 echo "[+] Using browser command: ${CHROME_CMD}"
 
 echo "[+] Enabling display manager (lightdm) ..."
-systemctl enable lightdm
+systemctl enable --now lightdm
 
 echo "[+] Installing dimmer script ..."
 install -d /usr/local/bin
@@ -133,10 +167,14 @@ echo "[+] Writing LXDE autostart for user: $USERNAME"
 HOME_DIR="$(getent passwd "$USERNAME" | cut -d: -f6)"
 if [ -z "${HOME_DIR:-}" ] || [ ! -d "$HOME_DIR" ]; then
   echo "Could not determine home directory for user '$USERNAME'." >&2
-  exit 2
+  exit 5
 fi
 
+# Prefer Raspberry Pi OS session dir, otherwise fall back to generic LXDE
 AUTOSTART_DIR="$HOME_DIR/.config/lxsession/LXDE-pi"
+if [ ! -d "$AUTOSTART_DIR" ]; then
+  AUTOSTART_DIR="$HOME_DIR/.config/lxsession/LXDE"
+fi
 AUTOSTART_FILE="$AUTOSTART_DIR/autostart"
 
 install -d -m 0755 "$AUTOSTART_DIR"
@@ -161,6 +199,7 @@ chmod 0644 "$AUTOSTART_FILE"
 
 echo
 echo "[✓] Kiosk configured."
+echo "    User:          ${USERNAME}"
 echo "    Browser:       ${CHROME_CMD}"
 echo "    Dashboard URL: ${DASH_URL}"
 echo "    Dim after:     ${IDLE_SECS}s  (DIM_LEVEL=${DIM_LEVEL}, BRIGHT_LEVEL=${BRIGHT_LEVEL})"
@@ -170,6 +209,7 @@ echo "  1) Reboot: sudo reboot"
 echo "  2) After boot, you should see the dashboard in kiosk mode."
 echo
 echo "Troubleshooting:"
-echo "  - If screen is black: confirm LCD driver/overlay is installed."
+echo "  - Raspberry Pi OS Lite: this script installs the GUI stack, but you still must install"
+echo "    your LCD driver/overlay (Waveshare/DSI/HDMI config) separately."
 echo "  - If kiosk doesn't start: check LightDM: sudo systemctl status lightdm --no-pager"
-
+echo "  - If screen is black: confirm LCD overlay/driver and output settings."
