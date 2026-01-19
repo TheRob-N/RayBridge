@@ -16,8 +16,8 @@ Web UI (after install):
 ## Supported Platform
 
 Recommended:
-- Raspberry Pi 4+
-- Raspberry Pi OS (Bookworm) 64-bit or another Debian-based OS
+- Raspberry Pi 3 or newer
+- Raspberry Pi OS Lite (Trixie with no desktop) 64-bit
 - Internet access during install
 
 ---
@@ -43,37 +43,86 @@ Used only for sending heartbeat alerts.
 
 ## Quick Install (Recommended)
 
+### Use Raspberry Pi Imager to install recommeded OS
+  - Be sure to set your region, username & password, wifi, and enable SSH
+  - DO NOT connect the Rayhuner! (you won't be able to connect to the Pi if you do)
+
 ### 1) Update your Pi and install prerequisites
 
 ```bash
-sudo apt update
-sudo apt upgrade -y
-sudo apt install -y git
+sudo apt update && sudo apt upgrade -y
 ```
 
-### 2) Clone the repo
+### 2) Pull directly from GitHub
 
 ```bash
 cd ~
-git clone https://github.com/TheRob-N/RayBridge.git
-cd RayBridge
+wget https://github.com/TheRob-N/RayBridge/archive/refs/heads/main.zip -O RayBridge-main.zip
 ```
 
 ### 3) Run the installer
 
 ```bash
+unzip RayBridge-main.zip
+cd RayBridge-main
 chmod +x install.sh
 sudo ./install.sh
 ```
-
-To review what the installer does:
-
+“If prompted to enable AppArmor support for msmtp, select No.”
+“When prompted Enter the Orbic / Rayhunter base URL. The default value works for most users.”
 ```bash
-sed -n '1,200p' install.sh
+Orbic/Rayhunter base URL [http://192.168.1.1:8080]:
 ```
+  - Press "Enter" for the default
+“When prompted Choose the directory where captures will be stored. The default web-accessible path is recommended.”
+```bash
+Capture output dir [/var/www/html/rayhunter/captures]:
+```
+  - Press "Enter" for the default
+“When prompted Choose the directory used to store RayBridge runtime state. Default is recommended.”
+```bash
+State dir [/opt/raybridge/state]:
+```
+  - Press "Enter" for the default
+“When prompted Enter the email address that will receive heartbeat and alert notifications.”
+```bash
+Heartbeat recipient email [you@example.com]: 
+```
+  - Enter your email address here
+“Email alerts are optional during install and can be configured later.”
+  - To configure later
+```bash
+[+] Configure email sending with msmtp
+    You can skip this and edit /etc/msmtprc later if you prefer.
+Configure /etc/msmtprc now? (y/N):
+```
+  - Enter "y" to configure now
+“Enter the following details or press "Enter" for the default. Gmail is shown as a common example.”
+```bash
+SMTP host [smtp.gmail.com]:
+SMTP port [587]:
+From address [test@localhost]:
+SMTP username [test@localhost]:
+SMTP password (for Gmail use an App Password):
+```
+“Enable cron jobs to automatically update status and send alerts.”
+```bash
+Install cron entries now? (y/N):
+```
+  -This will automate screen refreshes and reboots
+“Enable LCD kiosk mode to boot directly into the RayBridge dashboard on startup.”
+```bash
+[+] Optional: LCD kiosk mode (Chromium dashboard + dimmer)
+    If you have a small LCD and have already installed its driver/overlay,
+    this will configure the Pi to boot into the Raybridge dashboard.
+Run screeninstall.sh now? (y/N):
+```
+  - Enter "y" if you have the recommended screen
+
+  
 
 ### 4) Reboot
-
+Attach the Rayhunter to the Pi and reboot
 ```bash
 sudo reboot
 ```
