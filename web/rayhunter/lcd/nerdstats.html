@@ -2,131 +2,93 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=480,height=300,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta name="viewport" content="width=480,height=320,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>Raybridge LCD • Nerd Stats</title>
+
 <style>
-  :root{
-    --bg:#050608;
-    --line:#18202a;
-    --fg:#e9f2fb;
-    --muted:#91a6bb;
-    --ok:#16c784;
-    --shadow: 0 10px 26px rgba(0,0,0,.45);
-  }
-  *{ box-sizing:border-box; }
-  html,body{
-    width:480px; height:300px;
-    margin:0; padding:0;
-    background:var(--bg);
-    color:var(--fg);
-    overflow:hidden;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
-  }
-  .screen{
-    width:480px; height:300px;
-    padding:10px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-  .top{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-  }
-  .title{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    min-width:0;
-  }
-  .logo{ height:44px; width:auto; filter: drop-shadow(0 0 12px rgba(255,255,255,0.10)); }
-  .tag{
-    color:var(--muted);
-    font-size:12px;
-    letter-spacing:3px;
-    text-transform:uppercase;
-    white-space:nowrap;
-  }
-  .clock{ color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
+:root{
+  --bg:#050608;
+  --line:#18202a;
+  --fg:#e9f2fb;
+  --muted:#91a6bb;
+  --ok:#16c784;
+  --shadow:0 10px 26px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{
+  width:480px;height:320px;margin:0;padding:0;
+  background:var(--bg);color:var(--fg);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+  overflow:hidden;user-select:none;
+}
+.screen{padding:10px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;align-items:center;justify-content:space-between}
+.title{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{height:44px}
+.tag{color:var(--muted);font-size:12px;letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+.right{display:flex;align-items:center;gap:8px}
+.clock{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-  .panel{
-    flex:1;
-    border:1px solid var(--line);
-    border-radius:16px;
-    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-    box-shadow:var(--shadow);
-    padding:12px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    overflow:hidden;
-  }
+.btn{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:7px 10px;
+  min-width:88px;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+  background:rgba(0,0,0,.18);
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.btn small{display:block;font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:2px}
+.btn.warn{border-color:rgba(255,176,32,.35)}
+.btn.danger{border-color:rgba(255,77,77,.35)}
 
-  .grid{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:10px;
-    flex:1;
-  }
+.panel{
+  flex:1;border:1px solid var(--line);border-radius:16px;
+  padding:12px;display:flex;flex-direction:column;gap:10px;
+  box-shadow:var(--shadow);
+  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1}
+.row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(0,0,0,.18)}
+.k{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.v{font-size:14px;font-weight:900;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.okdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;box-shadow:0 0 10px rgba(22,199,132,.35)}
 
-  .row{
-    border:1px solid var(--line);
-    border-radius:12px;
-    background:rgba(0,0,0,.18);
-    padding:10px 12px;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-  }
-  .k{
-    color:var(--muted);
-    font-size:11px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-  }
-  .v{
-    margin-top:6px;
-    font-size:14px;
-    font-weight:900;
-    font-variant-numeric:tabular-nums;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .foot{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    color:var(--muted);
-    font-size:11px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-  }
-  .hint{ opacity:.95; }
-  .ver{ opacity:.95; }
-
-  .okdot{
-    display:inline-block;
-    width:8px; height:8px;
-    border-radius:50%;
-    background:var(--ok);
-    box-shadow:0 0 10px rgba(22,199,132,.35);
-    margin-right:8px;
-    vertical-align:middle;
-  }
+.foot{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.toast{
+  position:fixed;left:10px;right:10px;bottom:10px;
+  border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;background:rgba(0,0,0,.6);
+  color:var(--fg);font-size:12px;letter-spacing:1px;text-transform:uppercase;
+  display:none;
+}
 </style>
 </head>
+
 <body>
+<div class="toast" id="toast">WORKING…</div>
+
 <div class="screen">
   <div class="top">
     <div class="title">
       <img class="logo" src="/rayhunter/lcd/logo.png" alt="Raybridge">
       <div class="tag">NERD STATS</div>
     </div>
-    <div class="clock" id="clock">--:--:--</div>
+
+    <div class="right">
+      <div class="btn warn" id="btnRestart" title="Restart">
+        RESTART
+        <small>TAP</small>
+      </div>
+      <div class="btn danger" id="btnPower" title="Power off">
+        POWER OFF
+        <small>TAP</small>
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
   </div>
 
   <div class="panel">
@@ -138,86 +100,112 @@
       <div class="row"><div class="k">Uplink</div><div class="v" id="uplink">—</div></div>
 
       <div class="row"><div class="k">usb0</div><div class="v" id="usb0">—</div></div>
-      <div class="row"><div class="k">Orbic API</div><div class="v" id="orbic"><span class="okdot" id="orbicDot" style="display:none"></span><span id="orbicText">—</span></div></div>
-
-      <div class="row" style="grid-column:1 / span 2;"><div class="k">Version</div><div class="v" id="ver">—</div></div>
+      <div class="row"><div class="k">Orbic API</div>
+        <div class="v">
+          <span class="okdot" id="orbicDot" style="display:none"></span><span id="orbicText">—</span>
+        </div>
+      </div>
     </div>
 
     <div class="foot">
-      <div class="hint">TAP TO RETURN</div>
+      <div class="hint">TAP EMPTY SPACE TO RETURN</div>
       <div class="ver" id="updated">—</div>
     </div>
   </div>
 </div>
 
 <script>
-  const $ = (id)=>document.getElementById(id);
+const $ = (id)=>document.getElementById(id);
 
-  function tickClock(){
-    $("clock").textContent = new Date().toLocaleTimeString([], {hour12:false});
-  }
-
-  async function load(){
-    try{
-      const r = await fetch("/rayhunter/lcd/nerdstats.json?_=" + Date.now(), {cache:"no-store"});
-      if(!r.ok) throw new Error("HTTP " + r.status);
-      const s = await r.json();
-
-      $("uptime").textContent = s.uptime || "—";
-      $("host").textContent   = s.host || "—";
-      $("disk").textContent   = s.disk || "—";
-      $("uplink").textContent = s.uplink || "—";
-      $("usb0").textContent   = s.usb0 || "—";
-
-      const ok = !!s.orbic_ok;
-      $("orbicDot").style.display = ok ? "inline-block" : "none";
-      $("orbicText").textContent  = s.orbic_api ? (s.orbic_api + (ok ? " (OK)" : " (DOWN)")) : "—";
-
-      $("ver").textContent = s.version ? String(s.version) : "—";
-      $("updated").textContent = s.updated ? ("UPDATED " + String(s.updated).replace('T',' ')) : "—";
-
-    } catch(e){
-      $("uptime").textContent = "—";
-      $("host").textContent   = "—";
-      $("disk").textContent   = "—";
-      $("uplink").textContent = "—";
-      $("usb0").textContent   = "—";
-      $("orbicDot").style.display = "none";
-      $("orbicText").textContent  = "—";
-      $("ver").textContent = "—";
-      $("updated").textContent = "NO FEED";
-    }
-  }
-
-  // Tap anywhere -> back to main LCD
-  document.body.addEventListener("click", ()=>{
-    window.location.href = "/rayhunter/lcd/";
-  });
-
-  setInterval(tickClock, 500);
-  setInterval(load, 2000);
-
-  tickClock();
-  load();
-
-// --- Auto-return to main LCD after 2 minutes ---
-let autoReturnTimer;
-
-function startAutoReturn(){
-  clearTimeout(autoReturnTimer);
-  autoReturnTimer = setTimeout(()=>{
-    window.location.href = "/rayhunter/lcd/";
-  }, 120000); // 2 minutes
+function toast(msg, ms=1200){
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>{ t.style.display="none"; }, ms);
 }
 
-// Reset timer on any interaction
-document.addEventListener("click", startAutoReturn);
-document.addEventListener("touchstart", startAutoReturn);
+function tickClock(){
+  $("clock").textContent = new Date().toLocaleTimeString([], {hour12:false});
+}
 
-// Start timer on page load
+async function load(){
+  try{
+    const r = await fetch("/rayhunter/lcd/nerdstats.json?_=" + Date.now());
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const s = await r.json();
+
+    $("uptime").textContent = s.uptime || "—";
+    $("host").textContent   = s.host || "—";
+    $("disk").textContent   = s.disk || "—";
+    $("uplink").textContent = s.uplink || "—";
+    $("usb0").textContent   = s.usb0 || "—";
+
+    const ok = !!s.orbic_ok;
+    $("orbicDot").style.display = ok ? "inline-block" : "none";
+    $("orbicText").textContent  = s.orbic_api ? (s.orbic_api + (ok ? " (OK)" : " (DOWN)")) : "—";
+
+    $("updated").textContent = s.updated ? ("UPDATED " + String(s.updated).replace("T"," ")) : "—";
+  }catch(e){
+    $("updated").textContent = "NO FEED";
+  }
+}
+
+async function post(url){
+  const r = await fetch(url, {
+    method:"POST",
+    headers: {"Content-Type":"application/x-www-form-urlencoded"},
+    body: "x=1"
+  });
+  return r;
+}
+
+async function doAction(kind){
+  const msg = (kind === "restart")
+    ? "Restart the Pi now?"
+    : "Power off the Pi now?";
+  if(!confirm(msg)) return;
+
+  toast(kind === "restart" ? "RESTARTING…" : "POWERING OFF…", 2500);
+
+  const url = (kind === "restart")
+    ? "/cgi-bin/rb_restart.cgi"
+    : "/cgi-bin/rb_poweroff.cgi";
+
+  try{
+    const r = await post(url);
+    if(!r.ok) toast("FAILED (HTTP " + r.status + ")", 2500);
+  }catch(e){
+    toast("FAILED", 2500);
+  }
+}
+
+$("btnRestart").addEventListener("click", (e)=>{ e.preventDefault(); e.stopPropagation(); doAction("restart"); });
+$("btnPower").addEventListener("click", (e)=>{ e.preventDefault(); e.stopPropagation(); doAction("poweroff"); });
+$("btnRestart").addEventListener("touchstart", (e)=>{ e.preventDefault(); e.stopPropagation(); }, {passive:false});
+$("btnPower").addEventListener("touchstart", (e)=>{ e.preventDefault(); e.stopPropagation(); }, {passive:false});
+
+document.body.addEventListener("click", (ev)=>{
+  try{
+    const t = ev.target;
+    if(t && t.closest && t.closest("#btnRestart, #btnPower")) return;
+  }catch(e){}
+  window.location.href = "/rayhunter/lcd/";
+});
+
+let autoReturnTimer;
+function startAutoReturn(){
+  clearTimeout(autoReturnTimer);
+  autoReturnTimer = setTimeout(()=>{ window.location.href="/rayhunter/lcd/"; }, 120000);
+}
+document.addEventListener("click", startAutoReturn);
+document.addEventListener("touchstart", startAutoReturn, {passive:true});
 startAutoReturn();
 
-
+setInterval(tickClock, 500);
+setInterval(load, 2000);
+tickClock();
+load();
 </script>
 </body>
 </html>

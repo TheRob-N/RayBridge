@@ -1,14 +1,13 @@
 #!/bin/sh
-# Local-only safe reboot endpoint (POST only)
-
+# RayBridge: safe reboot endpoint (POST only)
 set -eu
 
 # POST only
 [ "${REQUEST_METHOD:-}" = "POST" ] || { echo "Status: 405"; echo; exit 0; }
 
-# Localhost only
+# Localhost + LAN only
 case "${REMOTE_ADDR:-}" in
-  127.0.0.1|::1) ;;
+  127.0.0.1|::1|192.168.1.*|::ffff:192.168.1.*) ;;
   *) echo "Status: 403"; echo; exit 0 ;;
 esac
 
