@@ -13,7 +13,6 @@ set -euo pipefail
 echo "Ensuring USB tether cannot steal the network..."
 bash scripts/fix-usb-routing.sh || true
 
-
 require_root() {
   if [ "$(id -u)" -ne 0 ]; then
     echo "Please run as root: sudo $0" >&2
@@ -48,9 +47,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "[+] Raybridge installer starting..."
 echo "    Bundle dir: $SCRIPT_DIR"
 
+# Reduce/avoid interactive package configuration prompts (e.g., AppArmor questions)
+export DEBIAN_FRONTEND=noninteractive
+
 echo "[+] Installing packages..."
-apt update
-apt install -y jq curl lighttpd msmtp msmtp-mta mailutils cron ca-certificates
+apt-get update
+
+# Automation improvements:
+# -yq: assume yes + quieter
+# --force-confnew: if a package wants to replace a config file, prefer the package's new version
+APT_INSTALL_FLAGS=(-yq -o Dpkg::Options::="--force-confnew")
+
+# Install dependencies (msmtp included here; separate install no longer needed)
+apt-get "${APT_INSTALL_FLAGS[@]}" install \
+  jq curl lighttpd msmtp msmtp-mta mailutils cron ca-certificates
 
 echo "[+] Creating directories..."
 mkdir -p /opt/raybridge/state /opt/raybridge
@@ -79,7 +89,6 @@ www-data ALL=NOPASSWD: /sbin/shutdown -h now
 www-data ALL=NOPASSWD: /sbin/shutdown -r now
 SUDOEOF
 chmod 440 /etc/sudoers.d/raybridge-power
-
 
 echo "[+] Copying scripts..."
 cp -f "$SCRIPT_DIR/scripts/"*.sh /opt/raybridge/
@@ -186,18 +195,41 @@ else
   echo "    Cron not installed. See docs/MANUAL_INSTALL.md for entries."
 fi
 
-
 echo
 echo "[+] Optional: LCD kiosk mode (Chromium dashboard + dimmer)"
 echo "    If you have a small LCD and have already installed its driver/overlay,"
 echo "    this will configure the Pi to boot into the Raybridge dashboard."
-read -r -p "Run screeninstall.sh now? (y/N): " DO_SCREEN
-DO_SCREEN="${DO_SCREEN:-N}"
+
+# Only offer to run screeninstall.sh if it exists somewhere we expect
+if [ -f /opt/raybridge/screeninstall.sh ] || \
+   [ -f "$SCRIPT_DIR/scripts/screeninstall.sh" ] || \
+   [ -f "$SCRIPT_DIR/screeninstall.sh" ]; then
+  read -r -p "Run screeninstall.sh now? (y/N): " DO_SCREEN
+  DO_SCREEN="${DO_SCREEN:-N}"
+else
+  DO_SCREEN="N"
+  echo "[i] screeninstall.sh not present; skipping LCD driver step."
+fi
+
 if [[ "$DO_SCREEN" =~ ^[Yy]$ ]]; then
-  if [ -f "$SCRIPT_DIR/screeninstall.sh" ]; then
+  # Prefer the installed script in /opt (this matches where we copy scripts/*.sh)
+  if [ -f /opt/raybridge/screeninstall.sh ]; then
+    echo "[+] Running /opt/raybridge/screeninstall.sh..."
+    bash /opt/raybridge/screeninstall.sh
+
+  # Fallbacks (in case repo layout differs)
+  elif [ -f "$SCRIPT_DIR/scripts/screeninstall.sh" ]; then
+    echo "[+] Running $SCRIPT_DIR/scripts/screeninstall.sh..."
+    bash "$SCRIPT_DIR/scripts/screeninstall.sh"
+
+  elif [ -f "$SCRIPT_DIR/screeninstall.sh" ]; then
+    echo "[+] Running $SCRIPT_DIR/screeninstall.sh..."
     bash "$SCRIPT_DIR/screeninstall.sh"
+
   else
-    echo "screeninstall.sh not found in bundle directory. Skipping." >&2
+    echo "[!] screeninstall.sh was requested but not found in /opt/raybridge or the bundle."
+    echo "    Skipping LCD driver step. Install your LCD driver/overlay manually, then re-run:"
+    echo "      sudo bash /opt/raybridge/screeninstall.sh"
   fi
 fi
 
