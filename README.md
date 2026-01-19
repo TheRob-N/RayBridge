@@ -51,13 +51,10 @@ http://<pi-ip>/rayhunter/
 Optimized for **480×300 SPI displays**.
 
 Features:
-- Enlarged RayBridge logo
-- **STINGRAY SENTINEL** header
-- Radar-style system status
 - Orbic connection indicator
 - Three live metric cards
-- Touch-based **REFRESH // ACK**
-- Alert overlay with visual emphasis
+- Touch-based Nerd Stats
+- Alert overlay
 
 ---
 
