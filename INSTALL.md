@@ -17,7 +17,7 @@ Web UI (after install):
 
 Recommended:
 - Raspberry Pi 3 or newer
-- Raspberry Pi OS (Trixie with desktop) 32-bit
+- Raspberry Pi OS (Trixie 64-bit Lite)
 - Internet access during install
 
 ---
