@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Raybridge LCD status generator periodically
+
+[Timer]
+OnBootSec=10
+OnUnitActiveSec=5
+AccuracySec=1s
+Unit=raybridge-lcd-status.service
+
+[Install]
+WantedBy=timers.target

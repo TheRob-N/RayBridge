@@ -43,8 +43,10 @@ if curl -fsS --interface "$ORBIC_IFACE" --max-time 2 "${ORBIC_URL}/" >/dev/null 
   ORBIC_OK="true"
 fi
 
-# Last sync: newest capture file mtime as proxy
-LAST_SYNC=""
+# Last sync: newest capture file mtime as proxy (fallback to "now")
+NOW_ISO="$(date -Is)"
+
+LAST_SYNC="$NOW_ISO"
 if [ -d "$CAP_DIR" ]; then
   newest="$(ls -t "$CAP_DIR" 2>/dev/null | head -n 1 || true)"
   if [ -n "$newest" ] && [ -f "$CAP_DIR/$newest" ]; then
@@ -96,23 +98,43 @@ fi
 
 tmp="$(mktemp)"
 
-# Write base JSON (proper escaping)
-python3 - <<PY >"$tmp"
-import json, sys
+# Write base JSON (proper escaping) using env vars (portable)
+export RB_VER="$VER"
+export RB_HEALTH="$HEALTH"
+export RB_SUMMARY="$SUMMARY"
+export RB_ORBIC_OK="$ORBIC_OK"
+export RB_LAST_SYNC="$LAST_SYNC"
+export RB_CAP_COUNT="$CAP_COUNT"
+export RB_LAST_EVENT="$LAST_EVENT"
+export RB_ALERT_ACTIVE="$ALERT_ACTIVE"
+export RB_ALERT_MESSAGE="$ALERT_MESSAGE"
+
+python3 - <<'PY' >"$tmp"
+import json, os, sys
 
 def to_bool(s: str) -> bool:
     return str(s).strip().lower() in ("1", "true", "yes", "y", "on")
 
+def empty_to_none(s: str):
+    s = (s or "").strip()
+    return None if s == "" else s
+
+cap_count_raw = (os.environ.get("RB_CAP_COUNT", "0") or "0").strip()
+try:
+    cap_count = int(cap_count_raw)
+except Exception:
+    cap_count = 0
+
 data = {
-  "version": ${VER!r},
-  "health": ${HEALTH!r},
-  "summary": ${SUMMARY!r},
-  "orbic_reachable": to_bool(${ORBIC_OK!r}),
-  "last_sync": None if ${LAST_SYNC!r} == "" else ${LAST_SYNC!r},
-  "capture_count": int(${CAP_COUNT!r}),
-  "last_event": None if ${LAST_EVENT!r} == "" else ${LAST_EVENT!r},
-  "alert_active": to_bool(${ALERT_ACTIVE!r}),
-  "alert_message": ${ALERT_MESSAGE!r},
+  "version": os.environ.get("RB_VER", "dev"),
+  "health": os.environ.get("RB_HEALTH", "unknown"),
+  "summary": os.environ.get("RB_SUMMARY", ""),
+  "orbic_reachable": to_bool(os.environ.get("RB_ORBIC_OK", "false")),
+  "last_sync": empty_to_none(os.environ.get("RB_LAST_SYNC", "")),
+  "capture_count": cap_count,
+  "last_event": empty_to_none(os.environ.get("RB_LAST_EVENT", "")),
+  "alert_active": to_bool(os.environ.get("RB_ALERT_ACTIVE", "false")),
+  "alert_message": os.environ.get("RB_ALERT_MESSAGE", ""),
 }
 
 json.dump(data, sys.stdout, indent=2)
